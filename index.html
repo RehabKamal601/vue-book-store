@@ -1,0 +1,350 @@
+
+ <!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Book Store</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        .more {
+            color: green;
+            font-weight: bold;
+        }
+        .less {
+            color: orange;
+            font-weight: bold;
+        }
+        .none {
+            color: red;
+            font-weight: bold;
+        }
+        .book-card {
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+        .book-card:hover {
+            transform: translateY(-5px);
+        }
+        .book-img {
+            height: 300px;
+            object-fit: cover;
+        }
+        .book-info {
+            font-size: 0.9rem;
+        }
+        .book-info strong {
+            color: #333;
+        }
+        .navbar-dark {
+            background-color: #2c3e50;
+        }
+        .btn-cart {
+            background-color: #3498db;
+            border: none;
+        }
+        .btn-wishlist {
+            background-color: #e74c3c;
+            border: none;
+        }
+        .btn-cart:hover {
+            background-color: #2980b9;
+        }
+        .btn-wishlist:hover {
+            background-color: #c0392b;
+        }
+        .cart-badge, .wishlist-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+        }
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-group-buttons {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .btn-group-buttons button {
+            flex: 1;
+        }
+    </style>
+  </head>
+  <body>
+   <div id="app" class="container my-3">
+    <nav class="navbar navbar-expand-lg navbar-dark rounded mb-4">
+      <div class="container-fluid">
+        <a href="#" class="navbar-brand" @click.prevent="currentView = 'books'">
+          <i class="fas fa-book me-2"></i>Book Store
+        </a>
+        <div class="nav-buttons">
+          <div class="d-flex align-items-center position-relative me-2">
+            <button class="btn btn-wishlist text-white position-relative" @click="currentView = 'wishlist'">
+              <i class="fas fa-heart"></i>
+              <span class="badge bg-danger rounded-pill wishlist-badge">{{ wishlist.items.length }}</span>
+            </button>
+          </div>
+          <div class="d-flex align-items-center position-relative">
+            <button class="btn btn-cart text-white position-relative" @click="currentView = 'cart'">
+              <i class="fas fa-shopping-cart"></i>
+              <span class="badge bg-danger rounded-pill cart-badge">{{ cart.items.length }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="row g-4" v-if="currentView === 'books'">
+      <div class="col-md-6 col-lg-4" v-for="book in books" :key="book.id">
+        <div class="card h-100 book-card shadow-sm">
+          <img :src="book.image" class="card-img-top book-img" :alt="book.name">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">{{ book.name }}</h5>
+            <p class="card-text flex-grow-1">{{ book.description }}</p>
+            <div class="book-info mb-2">
+              <div><strong>Author:</strong> {{ book.author }}</div>
+              <div><strong>Category:</strong> {{ book.category }}</div>
+              <div><strong>Pages:</strong> {{ book.pages }}</div>
+              <div><strong>ISBN:</strong> {{ book.ISBN }}</div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <span :class="[book.instock >= 5 ? 'more' : '', book.instock < 5 ? 'less' : '', book.instock == 0 ? 'none' : '']">
+                InStock: {{ book.instock }}
+              </span>
+              <span class="fw-bold text-primary">{{ currencyFormatter(book.price) }}</span>
+            </div>
+            <div class="btn-group-buttons">
+              <button class="btn btn-outline-danger" 
+                      @click="addToWishlist(book)"
+                      :disabled="isInWishlist(book.id)">
+                <i class="fas fa-heart"></i>
+              </button>
+              <button class="btn btn-primary" 
+                      :disabled="book.instock == 0" 
+                      @click="addBookToCart(book)">
+                <i class="fas fa-cart-plus me-2"></i>Add
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="currentView === 'cart'">
+      <div class="text-center py-4" v-if="cart.items.length === 0">
+        <h3 class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>Your cart is empty</h3>
+        <p class="text-muted">Please add some books to your cart</p>
+        <button class="btn btn-primary" @click="currentView = 'books'">
+          <i class="fas fa-book me-2"></i>Browse Books
+        </button>
+      </div>
+
+      <div v-else>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3><i class="fas fa-shopping-cart me-2"></i>Your Cart</h3>
+          <button class="btn btn-outline-secondary" @click="currentView = 'books'">
+            <i class="fas fa-arrow-left me-2"></i>Continue Shopping
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead class="table-dark">
+              <tr>
+                <th>Cover</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Price</th>
+                <th>Qty</th>
+                <th>Total</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in cart.items" :key="item.book.id">
+                <td><img :src="item.book.image" width="50" height="70" style="object-fit: cover;"></td>
+                <td>{{ item.book.name }}</td>
+                <td>{{ item.book.author }}</td>
+                <td>{{ currencyFormatter(item.book.price) }}</td>
+                <td>
+                  <div class="d-flex align-items-center justify-content-center">
+                    <button class="btn btn-sm btn-outline-danger" 
+                            @click="decreaseQuantity(item)"
+                            :disabled="item.quantity <= 1">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="mx-2">{{ item.quantity }}</span>
+                    <button class="btn btn-sm btn-outline-success" 
+                            @click="increaseQuantity(item)"
+                            :disabled="item.book.instock <= 0">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                </td>
+                <td>{{ currencyFormatter(item.book.price * item.quantity) }}</td>
+                <td>
+                  <button class="btn btn-sm btn-danger" @click="removeFromCart(item)">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="table-secondary">
+                <th colspan="5" class="text-end">Subtotal:</th>
+                <th colspan="2">{{ currencyFormatter(getTotalPrice()) }}</th>
+              </tr>
+              <tr class="table-secondary">
+                <th colspan="5" class="text-end">Tax (10%):</th>
+                <th colspan="2">{{ currencyFormatter(getTotalPrice() * 0.1) }}</th>
+              </tr>
+              <tr class="table-primary">
+                <th colspan="5" class="text-end">Grand Total:</th>
+                <th colspan="2">{{ currencyFormatter(getTotalPrice() * 1.1) }}</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-end mt-3">
+          <button class="btn btn-success me-2">
+            <i class="fas fa-credit-card me-2"></i>Checkout
+          </button>
+          <button class="btn btn-outline-danger" @click="clearCart">
+            <i class="fas fa-trash-alt me-2"></i>Clear Cart
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="currentView === 'wishlist'">
+      <div class="text-center py-4" v-if="wishlist.items.length === 0">
+        <h3 class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>Your wishlist is empty</h3>
+        <p class="text-muted">Please add some books to your wishlist</p>
+        <button class="btn btn-primary" @click="currentView = 'books'">
+          <i class="fas fa-book me-2"></i>Browse Books
+        </button>
+      </div>
+
+      <div v-else>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3><i class="fas fa-heart me-2"></i>Your Wishlist</h3>
+          <button class="btn btn-outline-secondary" @click="currentView = 'books'">
+            <i class="fas fa-arrow-left me-2"></i>Continue Shopping
+          </button>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-md-6 col-lg-4" v-for="book in wishlist.items" :key="book.id">
+            <div class="card h-100 book-card shadow-sm">
+              <img :src="book.image" class="card-img-top book-img" :alt="book.name">
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{ book.name }}</h5>
+                <p class="card-text flex-grow-1">{{ book.description }}</p>
+                <div class="book-info mb-2">
+                  <div><strong>Author:</strong> {{ book.author }}</div>
+                  <div><strong>Category:</strong> {{ book.category }}</div>
+                  <div><strong>Price:</strong> {{ currencyFormatter(book.price) }}</div>
+                </div>
+                <div class="btn-group-buttons">
+                  <button class="btn btn-danger" @click="removeFromWishlist(book.id)">
+                    <i class="fas fa-trash-alt me-2"></i>Remove
+                  </button>
+                  <button class="btn btn-primary" 
+                          :disabled="book.instock == 0" 
+                          @click="addBookToCart(book)">
+                    <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+   </div>
+
+   <script src="./books.js"></script>
+   <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          books: books,
+          currentView: 'books', 
+          cart: {
+            items: []
+          },
+          wishlist: {
+            items: []
+          }
+        }
+      },
+      methods: {
+        currencyFormatter(value) {
+          return new Intl.NumberFormat("ar-SA", {
+            style: "currency",
+            currency: "SAR",
+            minimumFractionDigits: 2
+          }).format(value);
+        },
+        isInWishlist(bookId) {
+          return this.wishlist.items.some(item => item.id === bookId);
+        },
+        addToWishlist(book) {
+          if (!this.isInWishlist(book.id)) {
+            this.wishlist.items.push(book);
+          }
+        },
+        removeFromWishlist(bookId) {
+          this.wishlist.items = this.wishlist.items.filter(item => item.id !== bookId);
+        },
+        increaseQuantity(item) {
+          item.quantity++;
+          item.book.instock--;
+        },
+        decreaseQuantity(item) {
+          item.quantity--;
+          item.book.instock++;
+          if (item.quantity === 0) {
+            this.removeFromCart(item);
+          }
+        },
+        addBookToCart(book) {
+          const existingItem = this.cart.items.find(item => item.book.id === book.id);
+          
+          if (existingItem) {
+            existingItem.quantity++;
+          } else {
+            this.cart.items.push({
+              book: book,
+              quantity: 1
+            });
+          }
+          book.instock--;
+        },
+        removeFromCart(item) {
+          item.book.instock += item.quantity;
+          this.cart.items = this.cart.items.filter(cartItem => cartItem.book.id !== item.book.id);
+        },
+        clearCart() {
+          this.cart.items.forEach(item => {
+            item.book.instock += item.quantity;
+          });
+          this.cart.items = [];
+        },
+        getTotalPrice() {
+          return this.cart.items.reduce((total, item) => {
+            return total + (item.book.price * item.quantity);
+          }, 0);
+        }
+      }
+    }).mount("#app");
+   </script>
+  </body>
+</html>
