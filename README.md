@@ -18,6 +18,7 @@ Styling: Custom CSS
 Currency Formatting: Intl.NumberFormat (SAR)
 
 📂 File Structure
+
 Copy
 book-store/
 ├── index.html          # Main HTML file
@@ -76,6 +77,7 @@ Copy
   image: 'url/to/cover.jpg'
 }
 💡 Customization Options
+
 To add more books:
 
 Add new objects to the books array in books.js
@@ -89,6 +91,7 @@ To adjust styling:
 Edit the CSS in the <style> section of index.html
 
 🌟 Future Enhancements
+
 LocalStorage persistence for cart
 
 Book search/filter functionality
@@ -98,6 +101,7 @@ User rating system
 Checkout process
 
 📜 License
+
 MIT License - Free to use and modify
 
 
